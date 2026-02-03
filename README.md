@@ -1,97 +1,87 @@
-# AI-Powered Quiz Generator
+# LLMOps Evaluation Pipeline
 
-An AI-powered quiz generator built with LangChain and OpenAI's GPT-3.5-turbo model.
+A CI/CD pipeline for automated testing and evaluation of LLM applications using GitHub Actions.
 
-## Features
 
-- Generates customized quizzes based on user-specified categories (Geography, Science, Art)
-- Uses a knowledge base of facts about various subjects (Leonardo DaVinci, Paris, Telescopes, etc.)
-- Includes evaluation functions to test the quiz generation
+## Overview
 
-## Setup Instructions
+This project demonstrates how to build an **automated evaluation pipeline** for LLM-powered applications. It shows best practices for:
 
-### 1. Create a Virtual Environment (Recommended)
+- Writing evaluation tests for LLM outputs
+- Running automated evals on every code change
+- Catching regressions in prompt engineering
+- Validating model behavior (correct responses & proper refusals)
+
+## The Evaluation Approach
+
+### Types of Tests
+
+| Test Type | Purpose | Example |
+|-----------|---------|---------|
+| **Content Validation** | Verify LLM includes expected information | Check if science quiz mentions "telescope", "physics" |
+| **Refusal Testing** | Ensure LLM declines out-of-scope requests | Asking about "Rome" should return "I'm sorry" |
+
+### Why Automated LLM Evals Matter
+
+- **Prompt changes can break things** — automated tests catch regressions
+- **Model updates may change behavior** — tests verify consistency
+- **CI/CD integration** — evaluations run on every push/PR
+
+
+
+## The Evaluation Tests
+
+```python
+# test.py - Example evaluation patterns
+
+def test_science_quiz():
+    """Verify LLM generates relevant content for valid categories"""
+    response = assistant_chain().invoke({"question": "Generate a quiz about science."})
+    expected_words = ["davinci", "telescope", "physics", "curie"]
+    assert any(word in response.lower() for word in expected_words)
+
+def test_refusal_rome():
+    """Verify LLM refuses out-of-scope requests appropriately"""
+    response = assistant_chain().invoke({"question": "Generate a quiz about Rome"})
+    assert "i'm sorry" in response.lower()
+```
+
+## Running Evaluations
+
+### Locally
 
 ```bash
-# Create virtual environment
+# Setup
 python -m venv venv
-
-# Activate it
-# On macOS/Linux:
 source venv/bin/activate
-
-# On Windows:
-# venv\Scripts\activate
-```
-
-### 2. Install Dependencies
-
-```bash
 pip install -r requirements.txt
+cp .env.example .env  # Add your OPENAI_API_KEY
+
+# Run evals
+pytest test.py -v
 ```
 
-### 3. Set Up API Keys
+### In CI (GitHub Actions)
 
-Copy the example environment file and add your API keys:
+The pipeline automatically runs on every push to `main` or pull request:
 
-```bash
-cp .env.example .env
-```
+1. **Add secret**: Go to repo **Settings → Secrets → Actions** → Add `OPENAI_API_KEY`
+2. **Push code**: Evaluations run automatically
+3. **View results**: Check the **Actions** tab
 
-Edit the `.env` file and add your OpenAI API key:
+## Sample Application
 
-```
-OPENAI_API_KEY=your_actual_openai_api_key_here
-```
+The demo uses a quiz generator as the LLM application being tested:
 
-**Getting an OpenAI API Key:**
-1. Go to [OpenAI's platform](https://platform.openai.com/)
-2. Sign up or log in
-3. Navigate to API Keys section
-4. Create a new API key
+- **Input**: Category request (Geography, Science, Art)
+- **Output**: 3 quiz questions based on a knowledge base
+- **Refusal**: Returns error for unsupported categories
 
-### 4. Run the Notebook
+This pattern applies to any LLM application — chatbots, content generators, classification systems, etc.
 
-```bash
-# Start Jupyter
-jupyter notebook
+## Tech Stack
 
-# Or use Jupyter Lab
-jupyter lab
-```
-
-Then open `quiz_generator.ipynb` in the browser.
-
-Alternatively, you can open the notebook directly in VS Code or Cursor with the Jupyter extension.
-
-## Project Structure
-
-```
-circleci/
-├── quiz_generator.ipynb  # Main notebook with the quiz generator
-├── utils.py              # Utility functions for API key management
-├── requirements.txt      # Python dependencies
-├── .env.example          # Example environment variables file
-├── .env                  # Your actual environment variables (not tracked)
-└── README.md             # This file
-```
-
-## Usage
-
-1. Run the notebook cells in order
-2. The quiz generator will create quizzes based on the categories:
-   - **Geography**: Questions about Paris
-   - **Science**: Questions about Leonardo DaVinci, Telescopes, Physics
-   - **Art**: Questions about Leonardo DaVinci, Paris, Starry Night
-
-## Evaluation
-
-The notebook includes two evaluation functions:
-
-1. **`eval_expected_words`**: Tests if the generated quiz contains expected keywords
-2. **`evaluate_refusal`**: Tests if the model refuses to answer invalid requests
-
-## Notes
-
-- The refusal test is expected to fail because the current prompt doesn't explicitly instruct the model to refuse out-of-scope requests
-- To make the refusal test pass, you would need to modify the `prompt_template` to include instructions for handling invalid categories
+- **LangChain** — LLM application framework
+- **OpenAI GPT-3.5-turbo** — Language model
+- **Pytest** — Test framework
+- **GitHub Actions** — CI/CD pipeline
